@@ -1,17 +1,16 @@
 "use client";
 
-// TODO: Conectar lib/api.ts (fetchWeather, geocodeCity, getBrowserCoords) durante el taller.
-
 import { useState, useCallback, useEffect } from "react";
 import { Thermometer, AlertCircle } from "lucide-react";
 import type { WeatherState, GeocodingResult, TemperatureUnit } from "@/types/weather";
+import { fetchWeather, getBrowserCoords, geocodeCity } from "@/lib/api";
 import { getWeatherDescriptor } from "@/lib/weatherCodes";
-import { MOCK_LOCATION } from "@/lib/mockData";
-import { fetchWeather } from "@/lib/api";
 import SearchBar from "./SearchBar";
 import WeatherCard from "./WeatherCard";
 import HourlyChart from "./HourlyChart";
 import DailyForecast from "./DailyForecast";
+
+const DEFAULT_CITY = "New York";
 
 export default function WeatherDashboard() {
   const [state, setState] = useState<WeatherState>({
@@ -28,7 +27,7 @@ export default function WeatherDashboard() {
       setState((prev) => ({ ...prev, loading: true, error: null }));
       try {
         const data = await fetchWeather(lat, lon, unit);
-        setState({ data, location, unit, loading: false, error: null });
+        setState((prev) => ({ ...prev, data, location, loading: false }));
       } catch (err) {
         setState((prev) => ({
           ...prev,
@@ -40,13 +39,22 @@ export default function WeatherDashboard() {
     []
   );
 
+  // Load default city on mount
   useEffect(() => {
-    loadWeather(
-      MOCK_LOCATION.latitude,
-      MOCK_LOCATION.longitude,
-      MOCK_LOCATION,
-      "celsius"
-    );
+    (async () => {
+      try {
+        const results = await geocodeCity(DEFAULT_CITY);
+        if (results.length === 0) throw new Error("Ciudad no encontrada.");
+        const loc = results[0];
+        await loadWeather(loc.latitude, loc.longitude, loc, "celsius");
+      } catch (err) {
+        setState((prev) => ({
+          ...prev,
+          loading: false,
+          error: err instanceof Error ? err.message : "Error de inicio.",
+        }));
+      }
+    })();
   }, [loadWeather]);
 
   function handleLocationSelect(location: GeocodingResult) {
@@ -55,14 +63,30 @@ export default function WeatherDashboard() {
 
   async function handleGeolocate() {
     setIsGeolocating(true);
-    await new Promise((resolve) => setTimeout(resolve, 500));
-    await loadWeather(
-      MOCK_LOCATION.latitude,
-      MOCK_LOCATION.longitude,
-      MOCK_LOCATION,
-      state.unit
-    );
-    setIsGeolocating(false);
+    try {
+      const { lat, lon } = await getBrowserCoords();
+      // Reverse-geocode: find nearest city name
+      const results = await geocodeCity(`${lat},${lon}`);
+      // Open-Meteo geocoding doesn't support reverse lookup by lat/lon directly,
+      // so we build a synthetic GeocodingResult from the coordinates.
+      const syntheticLocation: GeocodingResult = results[0] ?? {
+        id: 0,
+        name: "Mi Ubicación",
+        latitude: lat,
+        longitude: lon,
+        country: "",
+        country_code: "",
+        timezone: "auto",
+      };
+      await loadWeather(lat, lon, syntheticLocation, state.unit);
+    } catch (err) {
+      setState((prev) => ({
+        ...prev,
+        error: err instanceof Error ? err.message : "Error de geolocalización.",
+      }));
+    } finally {
+      setIsGeolocating(false);
+    }
   }
 
   function handleUnitToggle() {
@@ -78,11 +102,13 @@ export default function WeatherDashboard() {
     }
   }
 
+  // Determine background gradient
   const gradient =
     state.data && state.location
       ? getWeatherDescriptor(state.data.current.weather_code, state.data.current.is_day).gradient
       : "from-sky-400 via-blue-500 to-blue-700";
 
+  // Find current hour index in the hourly array
   const currentHourIndex = (() => {
     if (!state.data) return 0;
     const now = new Date();

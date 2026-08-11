@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { Search, MapPin, Loader2, X } from "lucide-react";
 import type { GeocodingResult } from "@/types/weather";
-// TODO: Importar geocodeCity desde lib/api.ts cuando se cree durante el taller.
+import { geocodeCity } from "@/lib/api";
 
 interface SearchBarProps {
   onLocationSelect: (location: GeocodingResult) => void;
@@ -25,18 +25,32 @@ export default function SearchBar({
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // TODO: Llamar geocodeCity(query) aquí durante el taller para activar el buscador.
-  useEffect(() => {
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(() => {
+  const search = useCallback(async (q: string) => {
+    if (q.trim().length < 2) {
       setSuggestions([]);
       setIsOpen(false);
+      return;
+    }
+    setIsSearching(true);
+    try {
+      const results = await geocodeCity(q);
+      setSuggestions(results);
+      setIsOpen(results.length > 0);
+    } catch {
+      setSuggestions([]);
+      setIsOpen(false);
+    } finally {
       setIsSearching(false);
-    }, 350);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => search(query), 350);
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
     };
-  }, [query]);
+  }, [query, search]);
 
   // Close dropdown when clicking outside
   useEffect(() => {

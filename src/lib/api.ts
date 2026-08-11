@@ -1,7 +1,38 @@
-import type { TemperatureUnit, WeatherApiResponse } from "@/types/weather";
+import type {
+  GeocodingResponse,
+  GeocodingResult,
+  TemperatureUnit,
+  WeatherApiResponse,
+} from "@/types/weather";
 
+const GEO_BASE = "https://geocoding-api.open-meteo.com/v1";
 const WEATHER_BASE = "https://api.open-meteo.com/v1";
 
+/**
+ * Resolves a city name to a list of matching geographic locations.
+ * Uses the Open-Meteo Geocoding API — no API key required.
+ */
+export async function geocodeCity(query: string): Promise<GeocodingResult[]> {
+  const url = new URL(`${GEO_BASE}/search`);
+  url.searchParams.set("name", query);
+  url.searchParams.set("count", "5");
+  url.searchParams.set("language", "en");
+  url.searchParams.set("format", "json");
+
+  const res = await fetch(url.toString(), { cache: "no-store" });
+
+  if (!res.ok) {
+    throw new Error(`Geocoding failed: ${res.status} ${res.statusText}`);
+  }
+
+  const data: GeocodingResponse = await res.json();
+  return data.results ?? [];
+}
+
+/**
+ * Fetches a full 7-day weather forecast (current + hourly + daily) from
+ * the Open-Meteo Forecast API — no API key required.
+ */
 export async function fetchWeather(
   lat: number,
   lon: number,
@@ -50,8 +81,28 @@ export async function fetchWeather(
   const res = await fetch(url.toString(), { cache: "no-store" });
 
   if (!res.ok) {
-    throw new Error(`Error ${res.status}: ${res.statusText}`);
+    throw new Error(`Weather fetch failed: ${res.status} ${res.statusText}`);
   }
 
-  return res.json() as Promise<WeatherApiResponse>;
+  const data: WeatherApiResponse = await res.json();
+  return data;
+}
+
+/**
+ * Uses the browser Geolocation API to get the user's current coordinates,
+ * then fetches weather for that location.
+ */
+export function getBrowserCoords(): Promise<{ lat: number; lon: number }> {
+  return new Promise((resolve, reject) => {
+    if (!navigator.geolocation) {
+      reject(new Error("Geolocation is not supported by your browser."));
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(
+      (pos) =>
+        resolve({ lat: pos.coords.latitude, lon: pos.coords.longitude }),
+      (err) => reject(new Error(err.message)),
+      { timeout: 10_000 }
+    );
+  });
 }
