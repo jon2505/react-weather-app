@@ -6,7 +6,8 @@ import { useState, useCallback, useEffect } from "react";
 import { Thermometer, AlertCircle } from "lucide-react";
 import type { WeatherState, GeocodingResult, TemperatureUnit } from "@/types/weather";
 import { getWeatherDescriptor } from "@/lib/weatherCodes";
-import { MOCK_WEATHER, MOCK_LOCATION } from "@/lib/mockData";
+import { MOCK_LOCATION } from "@/lib/mockData";
+import { fetchWeather } from "@/lib/api";
 import SearchBar from "./SearchBar";
 import WeatherCard from "./WeatherCard";
 import HourlyChart from "./HourlyChart";
@@ -23,10 +24,18 @@ export default function WeatherDashboard() {
   const [isGeolocating, setIsGeolocating] = useState(false);
 
   const loadWeather = useCallback(
-    async (_lat: number, _lon: number, location: GeocodingResult, unit: TemperatureUnit) => {
+    async (lat: number, lon: number, location: GeocodingResult, unit: TemperatureUnit) => {
       setState((prev) => ({ ...prev, loading: true, error: null }));
-      await new Promise((resolve) => setTimeout(resolve, 300));
-      setState({ data: MOCK_WEATHER, location, unit, loading: false, error: null });
+      try {
+        const data = await fetchWeather(lat, lon, unit);
+        setState({ data, location, unit, loading: false, error: null });
+      } catch (err) {
+        setState((prev) => ({
+          ...prev,
+          loading: false,
+          error: err instanceof Error ? err.message : "Error al obtener los datos del clima.",
+        }));
+      }
     },
     []
   );
