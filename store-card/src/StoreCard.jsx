@@ -88,7 +88,10 @@ export default function StoreCard() {
   return (
     <>
       {/* ===== Pantalla ===== */}
-      <div className="app-wrapper">
+      <div
+        className="app-wrapper"
+        style={{ '--primary': data.primaryColor, '--secondary': data.secondaryColor }}
+      >
         <h1 className="page-title">Tarjeta de Tienda con QR</h1>
 
         <div className="card-preview">

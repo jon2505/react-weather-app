@@ -1,7 +1,12 @@
 /* ===== App Wrapper ===== */
 .app-wrapper {
   min-height: 100vh;
-  background: linear-gradient(135deg, #f0f4ff 0%, #faf5ff 100%);
+  /* El fondo usa la paleta de la tarjeta */
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--primary) 10%, #ffffff) 0%,
+    color-mix(in srgb, var(--secondary) 6%, #ffffff) 100%
+  );
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -12,7 +17,7 @@
 .page-title {
   font-size: 1.6rem;
   font-weight: 700;
-  color: #3730a3;
+  color: var(--primary);
   margin-bottom: 2rem;
   letter-spacing: -0.02em;
 }
@@ -27,7 +32,7 @@
   background: #fff;
   border-radius: 20px;
   box-shadow:
-    0 20px 60px rgba(99, 102, 241, 0.18),
+    0 20px 60px color-mix(in srgb, var(--primary) 18%, transparent),
     0 4px 12px rgba(0, 0, 0, 0.08);
   overflow: hidden;
   transition: transform 0.3s ease, box-shadow 0.3s ease;
@@ -36,7 +41,7 @@
 .store-card:hover {
   transform: translateY(-4px);
   box-shadow:
-    0 28px 70px rgba(99, 102, 241, 0.22),
+    0 28px 70px color-mix(in srgb, var(--primary) 24%, transparent),
     0 6px 16px rgba(0, 0, 0, 0.1);
 }
 
@@ -135,7 +140,7 @@
   padding: 8px;
   background: #fff;
   border-radius: 12px;
-  border: 2px solid #e5e7eb;
+  border: 2px solid color-mix(in srgb, var(--primary) 20%, #e5e7eb);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.07);
 }
 
@@ -179,24 +184,24 @@
 }
 
 .btn-primary {
-  background: linear-gradient(135deg, #6366f1 0%, #818cf8 100%);
+  background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
   color: #fff;
-  box-shadow: 0 4px 14px rgba(99, 102, 241, 0.35);
+  box-shadow: 0 4px 14px color-mix(in srgb, var(--primary) 35%, transparent);
 }
 
 .btn-primary:hover {
   transform: translateY(-1px);
-  box-shadow: 0 6px 20px rgba(99, 102, 241, 0.45);
+  box-shadow: 0 6px 20px color-mix(in srgb, var(--primary) 45%, transparent);
 }
 
 .btn-secondary {
   background: #fff;
-  color: #6366f1;
-  border: 2px solid #c7d2fe;
+  color: var(--primary);
+  border: 2px solid color-mix(in srgb, var(--primary) 35%, #ffffff);
 }
 
 .btn-secondary:hover {
-  background: #eef2ff;
+  background: color-mix(in srgb, var(--primary) 8%, #ffffff);
 }
 
 .btn-ghost {
@@ -237,7 +242,7 @@
 .modal-title {
   font-size: 1.2rem;
   font-weight: 700;
-  color: #1f2937;
+  color: var(--primary);
   margin: 0 0 1.5rem;
 }
 
@@ -280,7 +285,7 @@
 }
 
 .form-group input:not([type='color']):focus {
-  border-color: #6366f1;
+  border-color: var(--primary);
 }
 
 .color-input-row {
@@ -443,6 +448,12 @@
     margin: 8mm;
   }
 
+  /* Forzar impresión de colores y fondos en todos los elementos */
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
   /* Ocultar interfaz de pantalla */
   .app-wrapper {
     display: none !important;
@@ -455,9 +466,7 @@
 
   .print-grid {
     display: grid;
-    /* 2 columnas de 90mm con 5mm de separación = 185mm < 194mm disponibles */
     grid-template-columns: repeat(2, 90mm);
-    /* 5 filas de 50mm con 5mm de separación = 275mm < 281mm disponibles */
     grid-template-rows: repeat(5, 50mm);
     gap: 5mm;
     width: 185mm;
@@ -467,7 +476,6 @@
     width: 90mm;
     height: 50mm;
     box-shadow: none;
-    /* Guías de corte punteadas */
     outline: 0.2mm dashed #9ca3af;
     outline-offset: 1.5mm;
   }
